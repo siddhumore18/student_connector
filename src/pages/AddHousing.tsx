@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { addHousingRequest } from '../services/firebase';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import { Building, Upload, Plus, X, DollarSign, MapPin, Phone, Mail, User, FileText, Bed, Bath } from 'lucide-react';
 
 export default function AddHousing() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -42,12 +46,23 @@ export default function AddHousing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setSubmitted(true);
+
+    try {
+      await addHousingRequest({
+        ...formData,
+        submittedBy: user?.id,
+        submitterName: user?.name,
+        submitterEmail: user?.email
+      });
+      
+      toast.success('Housing request submitted successfully!');
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting housing request:', error);
+      toast.error('Failed to submit housing request');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleAmenity = (amenity: string) => {

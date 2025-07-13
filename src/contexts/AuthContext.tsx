@@ -1,17 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, signInWithGoogle, logOut, onAuthStateChanged } from '../services/firebase';
+import { User as FirebaseUser } from 'firebase/auth';
+import toast from 'react-hot-toast';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'student' | 'admin';
+  role: 'student' | 'admin' | 'user';
   avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role?: 'student' | 'admin') => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -30,102 +32,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock users for demo - in real app, this would be from your backend/database
-  const mockUsers = [
-    {
-      id: '1',
-      email: 'admin@campus.com',
-      password: 'admin123',
-      name: 'Admin User',
-      role: 'admin' as const,
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150'
-    },
-    {
-      id: '2',
-      email: 'student@email.com',
-      password: 'student123',
-      name: 'Priya Sharma',
-      role: 'student' as const,
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'
-    }
-  ];
+  // Admin emails - these users will have admin role
+  const adminEmails = ['admin@campus.com', 'admin@connector.com'];
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        const isAdmin = adminEmails.includes(firebaseUser.email || '');
+        const userData: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: firebaseUser.displayName || 'User',
+          role: isAdmin ? 'admin' : 'user',
+          avatar: firebaseUser.photoURL || undefined
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } else {
+        setUser(null);
+        localStorage.removeItem('user');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    
-    if (!foundUser) {
+    try {
+      await signInWithGoogle();
+      toast.success('Successfully signed in!');
+    } catch (error: any) {
+      console.error('Google sign in error:', error);
+      toast.error('Failed to sign in with Google');
       setLoading(false);
-      throw new Error('Invalid email or password');
     }
-
-    const userWithoutPassword = {
-      id: foundUser.id,
-      email: foundUser.email,
-      name: foundUser.name,
-      role: foundUser.role,
-      avatar: foundUser.avatar
-    };
-
-    setUser(userWithoutPassword);
-    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    setLoading(false);
   };
 
-  const register = async (email: string, password: string, name: string, role: 'student' | 'admin' = 'student') => {
-    setLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email);
-    if (existingUser) {
-      setLoading(false);
-      throw new Error('User with this email already exists');
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      toast.success('Successfully logged out!');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
     }
-
-    const newUser = {
-      id: Date.now().toString(),
-      email,
-      name,
-      role,
-      avatar: role === 'admin' 
-        ? 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150'
-        : 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'
-    };
-
-    // In real app, you'd save to database
-    mockUsers.push({ ...newUser, password });
-    
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setLoading(false);
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
   };
 
   const value = {
     user,
-    login,
-    register,
-    logout,
+    signInWithGoogle: handleGoogleSignIn,
+    logout: handleLogout,
     loading
   };
 

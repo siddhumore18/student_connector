@@ -1,46 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { subscribeToMessServices } from '../services/firebase';
 import { Calendar, Clock, Star, Check, UtensilsCrossed, Leaf } from 'lucide-react';
 
-const messMenus = [
-  {
-    id: '1',
-    name: 'Central Mess',
-    rating: 4.5,
-    image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-    plans: {
-      breakfast: 150,
-      lunch: 180,
-      dinner: 160,
-      full: 450,
-    },
-    todayMenu: {
-      breakfast: ['Poha', 'Samosa', 'Tea/Coffee', 'Fruits'],
-      lunch: ['Rice', 'Dal', 'Sabji', 'Roti', 'Pickle', 'Curd'],
-      dinner: ['Chapati', 'Rajma', 'Aloo Gobhi', 'Rice', 'Sweet'],
-    },
-    features: ['Vegetarian', 'Jain Options', 'Fresh Ingredients'],
-    location: 'Block A, Main Campus',
-  },
-  {
-    id: '2',
-    name: 'North Campus Dining',
-    rating: 4.3,
-    image: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=400',
-    plans: {
-      breakfast: 140,
-      lunch: 170,
-      dinner: 150,
-      full: 420,
-    },
-    todayMenu: {
-      breakfast: ['Paratha', 'Chole', 'Lassi', 'Pickle'],
-      lunch: ['Biryani', 'Raita', 'Curry', 'Salad'],
-      dinner: ['Roti', 'Dal Makhani', 'Mixed Veg', 'Rice'],
-    },
-    features: ['North Indian', 'Organic', 'Late Night Service'],
-    location: 'North Campus, Block C',
-  },
-];
+// Default sample menu for display
+const defaultMenu = {
+  breakfast: ['Poha', 'Samosa', 'Tea/Coffee', 'Fruits'],
+  lunch: ['Rice', 'Dal', 'Sabji', 'Roti', 'Pickle', 'Curd'],
+  dinner: ['Chapati', 'Rajma', 'Aloo Gobhi', 'Rice', 'Sweet'],
+};
 
 const mealTimes = [
   { id: 'breakfast', name: 'Breakfast', time: '7:00 AM - 10:00 AM', icon: '🌅' },
@@ -49,9 +16,31 @@ const mealTimes = [
 ];
 
 export default function Mess() {
-  const [selectedMess, setSelectedMess] = useState(messMenus[0]);
+  const [messServices, setMessServices] = useState<any[]>([]);
+  const [selectedMess, setSelectedMess] = useState<any>(null);
   const [selectedMeal, setSelectedMeal] = useState('lunch');
   const [showSubscription, setShowSubscription] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMessServices((services) => {
+      setMessServices(services);
+      if (services.length > 0 && !selectedMess) {
+        setSelectedMess(services[0]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [selectedMess]);
+
+  if (messServices.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <UtensilsCrossed className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">No Mess Services Available</h2>
+        <p className="text-gray-600">Mess services will appear here once approved by admin.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -70,20 +59,24 @@ export default function Mess() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2">Today's Special</h2>
-            <p className="text-emerald-100 mb-4">Fresh Biryani with Raita at North Campus Dining</p>
+            <p className="text-emerald-100 mb-4">
+              {selectedMess ? `Fresh meals at ${selectedMess.providerName}` : 'Fresh meals available'}
+            </p>
             <div className="flex items-center space-x-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20">
                 <Leaf className="w-4 h-4 mr-1" />
-                Organic
+                Fresh
               </span>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20">
                 <Star className="w-4 h-4 mr-1" />
-                4.3 Rating
+                Quality Food
               </span>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold">₹170</div>
+            <div className="text-3xl font-bold">
+              ₹{selectedMess?.pricing?.lunch || 180}
+            </div>
             <div className="text-emerald-100">per meal</div>
           </div>
         </div>
@@ -93,7 +86,7 @@ export default function Mess() {
       <div className="mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Select Mess Facility</h3>
         <div className="grid md:grid-cols-2 gap-6">
-          {messMenus.map((mess) => (
+          {messServices.map((mess) => (
             <div
               key={mess.id}
               onClick={() => setSelectedMess(mess)}
@@ -106,19 +99,19 @@ export default function Mess() {
               <div className="p-6">
                 <div className="flex items-start space-x-4">
                   <img
-                    src={mess.image}
-                    alt={mess.name}
+                    src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"
+                    alt={mess.providerName}
                     className="w-20 h-20 rounded-xl object-cover"
                   />
                   <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-1">{mess.name}</h4>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-1">{mess.providerName}</h4>
                     <div className="flex items-center mb-2">
                       <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
-                      <span className="text-sm text-gray-600">{mess.rating} rating</span>
+                      <span className="text-sm text-gray-600">4.5 rating</span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">{mess.location}</p>
+                    <p className="text-sm text-gray-500 mb-3">{mess.address}</p>
                     <div className="flex flex-wrap gap-2">
-                      {mess.features.map((feature, index) => (
+                      {['Fresh', 'Hygienic', 'Quality'].map((feature, index) => (
                         <span
                           key={index}
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
@@ -139,7 +132,9 @@ export default function Mess() {
         {/* Today's Menu */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Today's Menu - {selectedMess.name}</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">
+              Today's Menu - {selectedMess?.providerName || 'Mess Service'}
+            </h3>
             
             {/* Meal Time Selector */}
             <div className="flex space-x-4 mb-6">
@@ -162,13 +157,16 @@ export default function Mess() {
 
             {/* Menu Items */}
             <div className="grid grid-cols-2 gap-4">
-              {selectedMess.todayMenu[selectedMeal as keyof typeof selectedMess.todayMenu].map((item, index) => (
+              {(selectedMess?.menuSample ? 
+                selectedMess.menuSample.split('\n').slice(0, 4) : 
+                defaultMenu[selectedMeal as keyof typeof defaultMenu]
+              ).map((item: string, index: number) => (
                 <div
                   key={index}
                   className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
                 >
                   <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
-                  <span className="text-gray-900">{item}</span>
+                  <span className="text-gray-900">{item.trim()}</span>
                 </div>
               ))}
             </div>
@@ -191,7 +189,7 @@ export default function Mess() {
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Subscription Plans</h3>
             
             <div className="space-y-4">
-              {Object.entries(selectedMess.plans).map(([plan, price]) => (
+              {selectedMess?.pricing && Object.entries(selectedMess.pricing).map(([plan, price]) => (
                 <div
                   key={plan}
                   className="p-4 border border-gray-200 rounded-xl hover:border-blue-300 transition-colors"
@@ -215,7 +213,7 @@ export default function Mess() {
             <div className="mt-6 p-4 bg-emerald-50 rounded-xl">
               <h4 className="font-medium text-emerald-800 mb-2">Full Plan (Monthly)</h4>
               <div className="text-2xl font-bold text-emerald-600">
-                ₹{(selectedMess.plans.full * 30).toLocaleString()}
+                ₹{selectedMess?.pricing?.full ? (selectedMess.pricing.full * 30).toLocaleString() : '13,500'}
               </div>
               <p className="text-sm text-emerald-700">Save ₹2,500/month vs individual meals</p>
             </div>

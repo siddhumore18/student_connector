@@ -1,81 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { subscribeToHousingListings } from '../services/firebase';
 import { Search, Filter, MapPin, DollarSign, Bed, Bath, Car, Wifi, Heart, Phone, Star, Shield } from 'lucide-react';
 
-const mockHousings = [
-  {
-    id: '1',
-    title: '2BHK Furnished Apartment near IIT Delhi',
-    type: 'apartment',
-    location: 'Hauz Khas, New Delhi',
-    rent: 25000,
-    deposit: 50000,
-    images: [
-      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg?auto=compress&cs=tinysrgb&w=400',
-    ],
-    amenities: ['wifi', 'parking', 'furnished', 'ac', 'security'],
-    details: {
-      bedrooms: 2,
-      bathrooms: 2,
-      area: '1200 sq ft',
-    },
-    contact: {
-      name: 'Rajesh Kumar',
-      phone: '+91 98765 43210',
-      verified: true,
-    },
-    rating: 4.7,
-    available: true,
-  },
-  {
-    id: '2',
-    title: 'Single Room PG for Girls with Meals',
-    type: 'pg',
-    location: 'Lajpat Nagar, Near Metro',
-    rent: 12000,
-    deposit: 24000,
-    images: [
-      'https://images.pexels.com/photos/439227/pexels-photo-439227.jpeg?auto=compress&cs=tinysrgb&w=400',
-    ],
-    amenities: ['meals', 'wifi', 'laundry', 'security', 'cleaning'],
-    details: {
-      bedrooms: 1,
-      bathrooms: 1,
-      area: '150 sq ft',
-    },
-    contact: {
-      name: 'Sunita Sharma',
-      phone: '+91 98765 43211',
-      verified: true,
-    },
-    rating: 4.5,
-    available: true,
-  },
-  {
-    id: '3',
-    title: '3BHK Independent House with Garden',
-    type: 'house',
-    location: 'Karol Bagh, Central Delhi',
-    rent: 35000,
-    deposit: 70000,
-    images: [
-      'https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=400',
-    ],
-    amenities: ['garden', 'parking', 'wifi', 'security', 'pets'],
-    details: {
-      bedrooms: 3,
-      bathrooms: 3,
-      area: '2000 sq ft',
-    },
-    contact: {
-      name: 'Amit Gupta',
-      phone: '+91 98765 43212',
-      verified: false,
-    },
-    rating: 4.8,
-    available: true,
-  },
-];
 
 const amenityIcons = {
   wifi: Wifi,
@@ -91,6 +17,7 @@ const amenityIcons = {
 };
 
 export default function Housing() {
+  const [housingListings, setHousingListings] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -98,6 +25,11 @@ export default function Housing() {
     budget: 'all',
     amenities: [],
   });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToHousingListings(setHousingListings);
+    return () => unsubscribe();
+  }, []);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -113,6 +45,16 @@ export default function Housing() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (housingListings.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">No Housing Listings Available</h2>
+        <p className="text-gray-600">Housing listings will appear here once approved by admin.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -201,21 +143,21 @@ export default function Housing() {
 
       {/* Results */}
       <div className="space-y-6">
-        {mockHousings.map((housing) => (
+        {housingListings.map((housing) => (
           <div key={housing.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
             <div className="md:flex">
               {/* Image */}
               <div className="md:w-1/3">
                 <div className="relative h-64 md:h-full">
                   <img
-                    src={housing.images[0]}
+                    src={housing.images?.[0] || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400'}
                     alt={housing.title}
                     className="w-full h-full object-cover"
                   />
                   <button className="absolute top-4 right-4 p-2 bg-white bg-opacity-90 rounded-full text-gray-600 hover:text-red-500 transition-colors">
                     <Heart className="w-5 h-5" />
                   </button>
-                  {housing.images.length > 1 && (
+                  {housing.images && housing.images.length > 1 && (
                     <div className="absolute bottom-4 left-4 px-2 py-1 bg-black bg-opacity-70 text-white text-xs rounded">
                       +{housing.images.length - 1} more
                     </div>
@@ -231,7 +173,7 @@ export default function Housing() {
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(housing.type)}`}>
                         {housing.type.toUpperCase()}
                       </span>
-                      {housing.contact.verified && (
+                      {housing.contact?.verified && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <Shield className="w-3 h-3 mr-1" />
                           Verified
@@ -246,13 +188,13 @@ export default function Housing() {
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <span className="flex items-center">
                         <Bed className="w-4 h-4 mr-1" />
-                        {housing.details.bedrooms} Bed
+                        {housing.propertyDetails?.bedrooms || housing.details?.bedrooms || 1} Bed
                       </span>
                       <span className="flex items-center">
                         <Bath className="w-4 h-4 mr-1" />
-                        {housing.details.bathrooms} Bath
+                        {housing.propertyDetails?.bathrooms || housing.details?.bathrooms || 1} Bath
                       </span>
-                      <span>{housing.details.area}</span>
+                      <span>{housing.propertyDetails?.area || housing.details?.area || 'N/A'} sq ft</span>
                     </div>
                   </div>
                   <div className="text-right">
@@ -264,7 +206,7 @@ export default function Housing() {
 
                 {/* Amenities */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {housing.amenities.slice(0, 5).map((amenity) => {
+                  {(housing.amenities || []).slice(0, 5).map((amenity: string) => {
                     const Icon = amenityIcons[amenity as keyof typeof amenityIcons];
                     return (
                       <span
@@ -280,7 +222,7 @@ export default function Housing() {
                       </span>
                     );
                   })}
-                  {housing.amenities.length > 5 && (
+                  {housing.amenities && housing.amenities.length > 5 && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                       +{housing.amenities.length - 5} more
                     </span>
@@ -292,10 +234,10 @@ export default function Housing() {
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                       <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
-                      <span className="text-sm text-gray-600">{housing.rating}</span>
+                      <span className="text-sm text-gray-600">{housing.rating || '4.5'}</span>
                     </div>
                     <div className="text-sm text-gray-600">
-                      Contact: {housing.contact.name}
+                      Contact: {housing.contact?.name || housing.ownerDetails?.name}
                     </div>
                   </div>
                   <div className="flex space-x-3">

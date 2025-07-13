@@ -1,4 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  subscribeToMessRequests, 
+  subscribeToHousingRequests, 
+  approveMessRequest, 
+  approveHousingRequest, 
+  rejectRequest 
+} from '../services/firebase';
+import toast from 'react-hot-toast';
 import { Users, Building, UtensilsCrossed, Settings, BarChart3, Plus, Search, Filter, Check, X, Eye, Clock, AlertCircle } from 'lucide-react';
 
 const adminStats = [
@@ -20,65 +28,23 @@ const pendingApprovals = [
   { id: 2, type: 'Mess', title: 'New mess partner application', user: 'Food Court Delhi', date: '2024-01-13' },
 ];
 
-const mockMessRequests = [
-  {
-    id: '1',
-    providerName: 'Healthy Bites Mess',
-    contactPerson: 'Rajesh Kumar',
-    email: 'rajesh@healthybites.com',
-    phone: '+91 98765 43210',
-    address: 'Block A, Near IIT Delhi, Hauz Khas',
-    description: 'We provide healthy, hygienic meals with focus on nutrition for students.',
-    pricing: { breakfast: 150, lunch: 180, dinner: 160, full: 450 },
-    status: 'pending',
-    submittedAt: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    providerName: 'Campus Kitchen',
-    contactPerson: 'Priya Sharma',
-    email: 'priya@campuskitchen.com',
-    phone: '+91 98765 43211',
-    address: 'Lajpat Nagar, Near Metro Station',
-    description: 'Traditional home-style cooking with variety of regional cuisines.',
-    pricing: { breakfast: 140, lunch: 170, dinner: 150, full: 420 },
-    status: 'pending',
-    submittedAt: '2024-01-14T14:20:00Z',
-  },
-];
-
-const mockHousingRequests = [
-  {
-    id: '1',
-    title: '2BHK Furnished Apartment near IIT Delhi',
-    type: 'apartment',
-    location: 'Hauz Khas, New Delhi',
-    rent: 25000,
-    deposit: 50000,
-    contact: { name: 'Amit Gupta', phone: '+91 98765 43210', email: 'amit@email.com' },
-    ownerDetails: { name: 'Amit Gupta', email: 'amit@email.com', phone: '+91 98765 43210', address: 'Delhi' },
-    status: 'pending',
-    submittedAt: '2024-01-15T09:15:00Z',
-  },
-  {
-    id: '2',
-    title: 'Single Room PG for Girls',
-    type: 'pg',
-    location: 'Karol Bagh, Central Delhi',
-    rent: 12000,
-    deposit: 24000,
-    contact: { name: 'Sunita Sharma', phone: '+91 98765 43211', email: 'sunita@email.com' },
-    ownerDetails: { name: 'Sunita Sharma', email: 'sunita@email.com', phone: '+91 98765 43211', address: 'Delhi' },
-    status: 'pending',
-    submittedAt: '2024-01-14T16:45:00Z',
-  },
-];
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [messRequests, setMessRequests] = useState(mockMessRequests);
-  const [housingRequests, setHousingRequests] = useState(mockHousingRequests);
+  const [messRequests, setMessRequests] = useState<any[]>([]);
+  const [housingRequests, setHousingRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
+
+  useEffect(() => {
+    // Subscribe to real-time updates
+    const unsubscribeMess = subscribeToMessRequests(setMessRequests);
+    const unsubscribeHousing = subscribeToHousingRequests(setHousingRequests);
+
+    return () => {
+      unsubscribeMess();
+      unsubscribeHousing();
+    };
+  }, []);
 
   const TabButton = ({ id, icon: Icon, label }: { id: string; icon: any; label: string }) => (
     <button
@@ -94,30 +60,37 @@ export default function Admin() {
     </button>
   );
 
-  const handleApproveRequest = (type: 'mess' | 'housing', id: string) => {
-    if (type === 'mess') {
-      setMessRequests(prev => prev.map(req => 
-        req.id === id ? { ...req, status: 'approved' as const } : req
-      ));
-    } else {
-      setHousingRequests(prev => prev.map(req => 
-        req.id === id ? { ...req, status: 'approved' as const } : req
-      ));
+  const handleApproveRequest = async (type: 'mess' | 'housing', id: string) => {
+    try {
+      const request = type === 'mess' 
+        ? messRequests.find(r => r.id === id)
+        : housingRequests.find(r => r.id === id);
+
+      if (type === 'mess') {
+        await approveMessRequest(id, request);
+        toast.success('Mess request approved! Service is now live.');
+      } else {
+        await approveHousingRequest(id, request);
+        toast.success('Housing request approved! Listing is now live.');
+      }
+      
+      setShowRequestModal(false);
+    } catch (error) {
+      console.error('Error approving request:', error);
+      toast.error('Failed to approve request');
     }
-    setShowRequestModal(false);
   };
 
-  const handleRejectRequest = (type: 'mess' | 'housing', id: string) => {
-    if (type === 'mess') {
-      setMessRequests(prev => prev.map(req => 
-        req.id === id ? { ...req, status: 'rejected' as const } : req
-      ));
-    } else {
-      setHousingRequests(prev => prev.map(req => 
-        req.id === id ? { ...req, status: 'rejected' as const } : req
-      ));
+  const handleRejectRequest = async (type: 'mess' | 'housing', id: string) => {
+    try {
+      const collection = type === 'mess' ? 'messRequests' : 'housingRequests';
+      await rejectRequest(collection, id);
+      toast.success('Request rejected');
+      setShowRequestModal(false);
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast.error('Failed to reject request');
     }
-    setShowRequestModal(false);
   };
 
   const viewRequestDetails = (request: any, type: 'mess' | 'housing') => {
@@ -344,7 +317,7 @@ export default function Admin() {
                       <p className="text-sm text-gray-600 mb-2">Contact: {request.contactPerson}</p>
                       <p className="text-sm text-gray-600 mb-2">Location: {request.address}</p>
                       <p className="text-sm text-gray-500">
-                        Submitted: {new Date(request.submittedAt).toLocaleDateString()}
+                        Submitted: {request.createdAt?.toDate ? new Date(request.createdAt.toDate()).toLocaleDateString() : 'Unknown'}
                       </p>
                     </div>
                     <div className="flex space-x-2">
@@ -413,7 +386,7 @@ export default function Admin() {
                       <p className="text-sm text-gray-600 mb-2">Location: {request.location}</p>
                       <p className="text-sm text-gray-600 mb-2">Rent: ₹{request.rent.toLocaleString()}/month</p>
                       <p className="text-sm text-gray-500">
-                        Submitted: {new Date(request.submittedAt).toLocaleDateString()}
+                        Submitted: {request.createdAt?.toDate ? new Date(request.createdAt.toDate()).toLocaleDateString() : 'Unknown'}
                       </p>
                     </div>
                     <div className="flex space-x-2">
