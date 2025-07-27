@@ -50,12 +50,12 @@ export default function Login() {
         </div>
 
         {/* Admin Info */}
-        <div className="bg-blue-50 rounded-xl p-4">
+        {/* <div className="bg-blue-50 rounded-xl p-4">
           <h3 className="font-semibold text-blue-900 mb-2">Admin Access:</h3>
           <p className="text-sm text-blue-700">
             Use admin@campus.com or admin@connector.com email to get admin privileges
           </p>
-        </div>
+        </div> */}
 
         {/* Email/Password Login */}
         <form onSubmit={handleEmailSignIn} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
