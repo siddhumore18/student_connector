@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Login() {
-  const { signInWithGoogle, loading } = useAuth();
+  const { signInWithGoogle, signInWithEmail, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [manualLoading, setManualLoading] = useState(false);
 
   const from = location.state?.from?.pathname || '/';
 
@@ -16,7 +20,20 @@ export default function Login() {
       await signInWithGoogle();
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error('Failed to sign in');
+      toast.error('Google sign-in failed');
+    }
+  };
+
+  const handleEmailSignIn = async (e) => {
+    e.preventDefault();
+    try {
+      setManualLoading(true);
+      await signInWithEmail(email, password);
+      navigate(from, { replace: true });
+    } catch (err) {
+      toast.error('Invalid email or password');
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -32,7 +49,7 @@ export default function Login() {
           <p className="text-gray-600">Sign in to your CampusConnect account</p>
         </div>
 
-        {/* Info */}
+        {/* Admin Info */}
         <div className="bg-blue-50 rounded-xl p-4">
           <h3 className="font-semibold text-blue-900 mb-2">Admin Access:</h3>
           <p className="text-sm text-blue-700">
@@ -40,7 +57,48 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Form */}
+        {/* Email/Password Login */}
+        <form onSubmit={handleEmailSignIn} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign in with Email</h3>
+            <p className="text-gray-600 mb-6">Use your credentials to login manually</p>
+          </div>
+
+          <div className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-400"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-400"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="submit"
+              disabled={manualLoading}
+              className="w-full px-4 py-3 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {manualLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </div>
+        </form>
+
+        {/* OR Divider */}
+        <div className="flex items-center justify-center space-x-2 text-gray-500 font-medium">
+          <span className="border-t border-gray-300 w-1/5" />
+          <span className="text-sm">OR</span>
+          <span className="border-t border-gray-300 w-1/5" />
+        </div>
+
+        {/* Google Sign-In */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Sign in with Google</h3>
@@ -64,7 +122,6 @@ export default function Login() {
               </>
             )}
           </button>
-
         </div>
       </div>
     </div>

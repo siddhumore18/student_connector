@@ -1,24 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, signInWithGoogle, logOut, onAuthStateChanged } from '../services/firebase';
-import { User as FirebaseUser } from 'firebase/auth';
+import { auth, signInWithGoogle, logOut, onAuthStateChanged } from '../services/firebase.js';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'student' | 'admin' | 'user';
-  avatar?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  signInWithGoogle: () => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -28,18 +13,17 @@ export function useAuth() {
   return context;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Admin emails - these users will have admin role
   const adminEmails = ['admin@campus.com', 'admin@connector.com'];
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const isAdmin = adminEmails.includes(firebaseUser.email || '');
-        const userData: User = {
+        const userData = {
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
           name: firebaseUser.displayName || 'User',
@@ -63,9 +47,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithGoogle();
       toast.success('Successfully signed in!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Google sign in error:', error);
       toast.error('Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithEmail = async (email, password) => {
+    setLoading(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = result.user;
+      const isAdmin = adminEmails.includes(firebaseUser.email || '');
+      const userData = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || 'User',
+        role: isAdmin ? 'admin' : 'user',
+        avatar: firebaseUser.photoURL || undefined
+      };
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      toast.success('Signed in successfully!');
+    } catch (error) {
+      console.error('Email sign in error:', error);
+      toast.error('Invalid email or password');
+    } finally {
       setLoading(false);
     }
   };
@@ -73,8 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     try {
       await logOut();
+      setUser(null);
+      localStorage.removeItem('user');
       toast.success('Successfully logged out!');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout');
     }
@@ -83,13 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     signInWithGoogle: handleGoogleSignIn,
+    signInWithEmail,
     logout: handleLogout,
     loading
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

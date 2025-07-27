@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { addHousingRequest } from '../services/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { addHousingListing } from '../services/firebase.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import toast from 'react-hot-toast';
 import { Building, Upload, Plus, X, DollarSign, MapPin, Phone, Mail, User, FileText, Bed, Bath } from 'lucide-react';
 
@@ -13,8 +13,8 @@ export default function AddHousing() {
     location: '',
     rent: '',
     deposit: '',
-    amenities: [] as string[],
-    images: [] as string[],
+    amenities: [],
+    images: [],
     contact: {
       name: '',
       phone: '',
@@ -32,7 +32,7 @@ export default function AddHousing() {
       area: '',
       furnished: false,
     },
-    documents: [] as string[],
+    documents: [],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,29 +43,29 @@ export default function AddHousing() {
     'Swimming Pool', 'Laundry', 'Power Backup', 'Water Supply', 'Balcony', 'Pets Allowed'
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
-      await addHousingRequest({
+      await addHousingListing({
         ...formData,
         submittedBy: user?.id,
         submitterName: user?.name,
-        submitterEmail: user?.email
+        submitterEmail: user?.email,
+        available: true,
+        approvedAt: new Date(),
       });
-      
-      toast.success('Housing request submitted successfully!');
+      toast.success('Housing listing submitted successfully!');
       setSubmitted(true);
     } catch (error) {
-      console.error('Error submitting housing request:', error);
-      toast.error('Failed to submit housing request');
+      console.error('Error submitting housing listing:', error);
+      toast.error('Failed to submit housing listing');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const toggleAmenity = (amenity: string) => {
+  const toggleAmenity = (amenity) => {
     setFormData({
       ...formData,
       amenities: formData.amenities.includes(amenity)
@@ -81,14 +81,15 @@ export default function AddHousing() {
     });
   };
 
-  const removeImage = (index: number) => {
+  const removeImage = (index) => {
     setFormData({
       ...formData,
       images: formData.images.filter((_, i) => i !== index)
     });
   };
 
-  const updateImage = (index: number, value: string) => {
+
+  const updateImage = (index, value) => {
     const newImages = [...formData.images];
     newImages[index] = value;
     setFormData({
@@ -104,14 +105,14 @@ export default function AddHousing() {
     });
   };
 
-  const removeDocument = (index: number) => {
+  const removeDocument = (index) => {
     setFormData({
       ...formData,
       documents: formData.documents.filter((_, i) => i !== index)
     });
   };
 
-  const updateDocument = (index: number, value: string) => {
+  const updateDocument = (index, value) => {
     const newDocuments = [...formData.documents];
     newDocuments[index] = value;
     setFormData({
@@ -136,7 +137,7 @@ export default function AddHousing() {
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Admin team reviews your listing</li>
               <li>• Document verification</li>
-              <li>• Property inspection (if required)</li>
+              <li>• Property inspection (if required provide detailed documents)</li>
               <li>• Listing goes live after approval</li>
             </ul>
           </div>

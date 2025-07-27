@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Users, User, MapPin, DollarSign, Calendar, Save } from 'lucide-react';
+import { addRoommateProfile } from '../services/firebase.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function AddRoommateProfile() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -24,15 +27,17 @@ export default function AddRoommateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call - in real app, this would save directly to database
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setSubmitted(true);
+    try {
+      await addRoommateProfile({ ...formData, userId: user.id });
+      setSubmitted(true);
+    } catch (error) {
+      alert('Failed to create profile. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {

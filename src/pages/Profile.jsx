@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Camera, Edit3, Save, X, MapPin, GraduationCap, Phone, Mail, Calendar } from 'lucide-react';
+import { getAuth } from "firebase/auth";
 
 const mockProfile = {
   id: '1',
@@ -13,10 +14,10 @@ const mockProfile = {
   year: '4th Year',
   college: 'IIT Delhi',
   preferences: {
-    gender: 'female' as const,
+    gender: 'female',
     budget: { min: 8000, max: 15000 },
-    lifestyle: 'moderate' as const,
-    cleanliness: 'neat' as const,
+    lifestyle: 'moderate',
+    cleanliness: 'neat',
     smoking: false,
     pets: false,
   },
@@ -28,6 +29,39 @@ export default function Profile() {
   const [profile, setProfile] = useState(mockProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(profile);
+  const [showInitialForm, setShowInitialForm] = useState(false);
+
+  // Fetch user info from login (Firebase Auth example)
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const updatedProfile = {
+        ...mockProfile,
+        name: user.displayName || "",
+        email: user.email || "",
+        avatar: user.photoURL || mockProfile.avatar,
+        userId: user.uid,
+      };
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
+      if (
+        !updatedProfile.phone ||
+        !updatedProfile.course ||
+        !updatedProfile.year ||
+        !updatedProfile.college ||
+        !updatedProfile.bio
+      ) {
+        setShowInitialForm(true);
+      }
+    }
+  }, []);
+
+  const handleInitialSubmit = (e) => {
+    e.preventDefault();
+    setProfile(editForm);
+    setShowInitialForm(false);
+  };
 
   const handleSave = () => {
     setProfile(editForm);
@@ -38,6 +72,163 @@ export default function Profile() {
     setEditForm(profile);
     setIsEditing(false);
   };
+
+  if (showInitialForm) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
+        <form onSubmit={handleInitialSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Phone"
+            value={editForm.phone}
+            onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Course"
+            value={editForm.course}
+            onChange={e => setEditForm({ ...editForm, course: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <select
+            value={editForm.year}
+            onChange={e => setEditForm({ ...editForm, year: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Select Year</option>
+            <option value="1st Year">1st Year</option>
+            <option value="2nd Year">2nd Year</option>
+            <option value="3rd Year">3rd Year</option>
+            <option value="4th Year">4th Year</option>
+            <option value="Graduate">Graduate</option>
+          </select>
+          <input
+            type="text"
+            placeholder="College"
+            value={editForm.college}
+            onChange={e => setEditForm({ ...editForm, college: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <textarea
+            placeholder="Bio"
+            value={editForm.bio}
+            onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <h3 className="font-semibold mt-4">Roommate Preferences</h3>
+          <select
+            value={editForm.preferences.gender}
+            onChange={e => setEditForm({
+              ...editForm,
+              preferences: { ...editForm.preferences, gender: e.target.value }
+            })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Gender Preference</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="any">Any</option>
+          </select>
+          <select
+            value={editForm.preferences.lifestyle}
+            onChange={e => setEditForm({
+              ...editForm,
+              preferences: { ...editForm.preferences, lifestyle: e.target.value }
+            })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Lifestyle</option>
+            <option value="quiet">Quiet</option>
+            <option value="moderate">Moderate</option>
+            <option value="social">Social</option>
+          </select>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              placeholder="Budget Min"
+              value={editForm.preferences.budget.min}
+              onChange={e => setEditForm({
+                ...editForm,
+                preferences: {
+                  ...editForm.preferences,
+                  budget: { ...editForm.preferences.budget, min: parseInt(e.target.value) }
+                }
+              })}
+              className="w-full p-3 border border-gray-300 rounded-lg"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Budget Max"
+              value={editForm.preferences.budget.max}
+              onChange={e => setEditForm({
+                ...editForm,
+                preferences: {
+                  ...editForm.preferences,
+                  budget: { ...editForm.preferences.budget, max: parseInt(e.target.value) }
+                }
+              })}
+              className="w-full p-3 border border-gray-300 rounded-lg"
+              required
+            />
+          </div>
+          <select
+            value={editForm.preferences.cleanliness}
+            onChange={e => setEditForm({
+              ...editForm,
+              preferences: { ...editForm.preferences, cleanliness: e.target.value }
+            })}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          >
+            <option value="">Cleanliness</option>
+            <option value="neat">Very Neat</option>
+            <option value="average">Average</option>
+            <option value="flexible">Flexible</option>
+          </select>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={editForm.preferences.smoking}
+              onChange={e => setEditForm({
+                ...editForm,
+                preferences: { ...editForm.preferences, smoking: e.target.checked }
+              })}
+              className="mr-2"
+            />
+            <label>Smoking allowed</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={editForm.preferences.pets}
+              onChange={e => setEditForm({
+                ...editForm,
+                preferences: { ...editForm.preferences, pets: e.target.checked }
+              })}
+              className="mr-2"
+            />
+            <label>Pets allowed</label>
+          </div>
+          <button
+            type="submit"
+            className="w-full mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Save Profile
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -240,7 +431,7 @@ export default function Profile() {
                     value={editForm.preferences.gender}
                     onChange={(e) => setEditForm({
                       ...editForm,
-                      preferences: { ...editForm.preferences, gender: e.target.value as any }
+                      preferences: { ...editForm.preferences, gender: e.target.value }
                     })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
@@ -259,7 +450,7 @@ export default function Profile() {
                     value={editForm.preferences.lifestyle}
                     onChange={(e) => setEditForm({
                       ...editForm,
-                      preferences: { ...editForm.preferences, lifestyle: e.target.value as any }
+                      preferences: { ...editForm.preferences, lifestyle: e.target.value }
                     })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
@@ -313,7 +504,7 @@ export default function Profile() {
                     value={editForm.preferences.cleanliness}
                     onChange={(e) => setEditForm({
                       ...editForm,
-                      preferences: { ...editForm.preferences, cleanliness: e.target.value as any }
+                      preferences: { ...editForm.preferences, cleanliness: e.target.value }
                     })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >

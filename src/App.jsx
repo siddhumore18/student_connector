@@ -1,20 +1,22 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Roommates from './pages/Roommates';
-import Mess from './pages/Mess';
-import Housing from './pages/Housing';
-import Admin from './pages/Admin';
-import Profile from './pages/Profile';
-import AddMess from './pages/AddMess';
-import AddHousing from './pages/AddHousing';
-import AddRoommateProfile from './pages/AddRoommateProfile';
+import { AuthProvider } from './contexts/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Layout from './components/Layout.jsx';
+import Home from './pages/Home.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import Roommates from './pages/Roommates.jsx';
+import Mess from './pages/Mess.jsx';
+import Housing from './pages/Housing.jsx';
+import Admin from './pages/Admin.jsx';
+import Profile from './pages/Profile.jsx';
+import AddMess from './pages/AddMess.jsx';
+import AddHousing from './pages/AddHousing.jsx';
+import AddRoommateProfile from './pages/AddRoommateProfile.jsx';
+import MessDetails from './pages/MessDetails.jsx';
+
 
 function App() {
   return (
@@ -29,6 +31,7 @@ function App() {
           },
         }}
       />
+      
       <Router>
         <Routes>
           {/* Public routes */}
@@ -44,6 +47,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="/roommates" element={<Roommates />} />
             <Route path="/mess" element={<Mess />} />
+            <Route path="/mess/:id" element={<MessDetails />} />
             <Route path="/housing" element={<Housing />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/add-mess" element={<AddMess />} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { addMessRequest } from '../services/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { addMessRequest } from '../services/firebase.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import toast from 'react-hot-toast';
 import { UtensilsCrossed, Upload, Plus, X, DollarSign, MapPin, Phone, Mail, User, FileText } from 'lucide-react';
 
@@ -13,36 +13,56 @@ export default function AddMess() {
     phone: '',
     address: '',
     description: '',
-    menuSample: '',
+    todaysMenu: [''],
+    weekSpecial: [''],
+    subscriptionPlans: [''],
     pricing: {
       breakfast: '',
       lunch: '',
       dinner: '',
       full: '',
     },
-    documents: [] as string[],
+    documents: [],
   });
+
+  // Handlers for dynamic fields
+  const addToArray = (field) => {
+    setFormData({ ...formData, [field]: [...formData[field], ''] });
+  };
+  const removeFromArray = (field, index) => {
+    setFormData({ ...formData, [field]: formData[field].filter((_, i) => i !== index) });
+  };
+  const updateArray = (field, index, value) => {
+    const arr = [...formData[field]];
+    arr[index] = value;
+    setFormData({ ...formData, [field]: arr });
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    const dataToSend = {
+      ...formData,
+      menu: {
+        today: formData.todaysMenu.filter(Boolean),
+        weekSpecial: formData.weekSpecial.filter(Boolean),
+      },
+      subscriptionPlans: formData.subscriptionPlans.filter(Boolean),
+      submittedBy: user?.id,
+      submitterName: user?.name,
+      submitterEmail: user?.email,
+    };
+    console.log('Submitting mess service request:', dataToSend);
     try {
-      await addMessRequest({
-        ...formData,
-        submittedBy: user?.id,
-        submitterName: user?.name,
-        submitterEmail: user?.email
-      });
-      
-      toast.success('Mess request submitted successfully!');
+      await addMessRequest(dataToSend);
+      toast.success('Mess service request submitted successfully! Awaiting admin approval.');
       setSubmitted(true);
     } catch (error) {
-      console.error('Error submitting mess request:', error);
-      toast.error('Failed to submit mess request');
+      console.error('Error submitting mess service request:', error);
+      toast.error('Failed to submit mess service request: ' + (error?.message || error));
     } finally {
       setIsSubmitting(false);
     }
@@ -55,14 +75,14 @@ export default function AddMess() {
     });
   };
 
-  const removeDocument = (index: number) => {
+  const removeDocument = (index) => {
     setFormData({
       ...formData,
       documents: formData.documents.filter((_, i) => i !== index)
     });
   };
 
-  const updateDocument = (index: number, value: string) => {
+  const updateDocument = (index, value) => {
     const newDocuments = [...formData.documents];
     newDocuments[index] = value;
     setFormData({
@@ -209,16 +229,71 @@ export default function AddMess() {
                 placeholder="Describe your mess service, specialties, and what makes you unique..."
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sample Menu *</label>
-              <textarea
-                required
-                value={formData.menuSample}
-                onChange={(e) => setFormData({ ...formData, menuSample: e.target.value })}
-                rows={6}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                placeholder="Provide a sample weekly menu:&#10;Monday: Breakfast - Poha, Tea | Lunch - Rice, Dal, Sabji | Dinner - Roti, Curry&#10;Tuesday: ..."
-              />
+            {/* Today's Menu */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-blue-700 mb-4 flex items-center">
+                Today's Menu
+              </h3>
+              <div className="space-y-2">
+                {formData.todaysMenu.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={item}
+                      onChange={e => updateArray('todaysMenu', idx, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g. Paneer Butter Masala"
+                    />
+                    <button type="button" onClick={() => removeFromArray('todaysMenu', idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><X className="w-4 h-4" /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => addToArray('todaysMenu')} className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors mt-2"><Plus className="w-4 h-4 mr-2" />Add Menu Item</button>
+              </div>
+            </div>
+            {/* Week's Special Menu */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-blue-700 mb-4 flex items-center">
+                This Week's Special Menu
+              </h3>
+              <div className="space-y-2">
+                {formData.weekSpecial.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={item}
+                      onChange={e => updateArray('weekSpecial', idx, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g. Monday: Chole Bhature"
+                    />
+                    <button type="button" onClick={() => removeFromArray('weekSpecial', idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><X className="w-4 h-4" /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => addToArray('weekSpecial')} className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors mt-2"><Plus className="w-4 h-4 mr-2" />Add Special</button>
+              </div>
+            </div>
+            {/* Subscription Plans */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-blue-700 mb-4 flex items-center">
+                Subscription Plans
+              </h3>
+              <div className="space-y-2">
+                {formData.subscriptionPlans.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={item}
+                      onChange={e => updateArray('subscriptionPlans', idx, e.target.value)}
+                      className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g. Monthly: ₹3000"
+                    />
+                    <button type="button" onClick={() => removeFromArray('subscriptionPlans', idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><X className="w-4 h-4" /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => addToArray('subscriptionPlans')} className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors mt-2"><Plus className="w-4 h-4 mr-2" />Add Plan</button>
+              </div>
             </div>
           </div>
         </div>

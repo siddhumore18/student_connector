@@ -2,10 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   subscribeToMessRequests, 
   subscribeToHousingRequests, 
+  subscribeToMessServices, 
+  subscribeToHousingListings, 
+  subscribeToRoommateProfiles, 
   approveMessRequest, 
   approveHousingRequest, 
-  rejectRequest 
-} from '../services/firebase';
+  rejectRequest, 
+  deleteMess, 
+  deleteHousing, 
+  deleteRoommate 
+} from '../services/firebase.js';
 import toast from 'react-hot-toast';
 import { Users, Building, UtensilsCrossed, Settings, BarChart3, Plus, Search, Filter, Check, X, Eye, Clock, AlertCircle } from 'lucide-react';
 
@@ -30,23 +36,44 @@ const pendingApprovals = [
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [messRequests, setMessRequests] = useState<any[]>([]);
-  const [housingRequests, setHousingRequests] = useState<any[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [messRequests, setMessRequests] = useState([]);
+  const [housingRequests, setHousingRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [messServices, setMessServices] = useState([]);
+  const [housingListings, setHousingListings] = useState([]);
+  const [roommateProfiles, setRoommateProfiles] = useState([]);
+  const [messes, setMesses] = useState([]);
+  const [houses, setHouses] = useState([]);
+  const [roommates, setRoommates] = useState([]);
 
   useEffect(() => {
     // Subscribe to real-time updates
     const unsubscribeMess = subscribeToMessRequests(setMessRequests);
     const unsubscribeHousing = subscribeToHousingRequests(setHousingRequests);
+    const unsubscribeMessServices = subscribeToMessServices((services) => {
+      console.log('subscribeToMessServices update:', services);
+      setMessServices(services);
+    });
+    const unsubscribeHousingListings = subscribeToHousingListings(setHousingListings);
+    const unsubscribeRoommates = subscribeToRoommateProfiles(setRoommateProfiles);
+    const unsubMesses = subscribeToMessServices(setMesses);
+    const unsubHouses = subscribeToHousingListings(setHouses);
+    const unsubRoommates = subscribeToRoommateProfiles(setRoommates);
 
     return () => {
       unsubscribeMess();
       unsubscribeHousing();
+      unsubscribeMessServices();
+      unsubscribeHousingListings();
+      unsubscribeRoommates();
+      unsubMesses();
+      unsubHouses();
+      unsubRoommates();
     };
   }, []);
 
-  const TabButton = ({ id, icon: Icon, label }: { id: string; icon: any; label: string }) => (
+  const TabButton = ({ id, icon: Icon, label }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={`flex items-center space-x-2 px-4 py-3 rounded-xl font-medium transition-colors ${
@@ -60,7 +87,7 @@ export default function Admin() {
     </button>
   );
 
-  const handleApproveRequest = async (type: 'mess' | 'housing', id: string) => {
+  const handleApproveRequest = async (type, id) => {
     try {
       const request = type === 'mess' 
         ? messRequests.find(r => r.id === id)
@@ -81,7 +108,7 @@ export default function Admin() {
     }
   };
 
-  const handleRejectRequest = async (type: 'mess' | 'housing', id: string) => {
+  const handleRejectRequest = async (type, id) => {
     try {
       const collection = type === 'mess' ? 'messRequests' : 'housingRequests';
       await rejectRequest(collection, id);
@@ -93,9 +120,31 @@ export default function Admin() {
     }
   };
 
-  const viewRequestDetails = (request: any, type: 'mess' | 'housing') => {
+  const viewRequestDetails = (request, type) => {
     setSelectedRequest({ ...request, type });
     setShowRequestModal(true);
+  };
+
+  const handleDelete = async (type, id) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    try {
+      if (type === 'mess') {
+        await deleteMess(id);
+        setMessServices(prev => prev.filter(service => service.id !== id));
+      }
+      if (type === 'house') {
+        await deleteHousing(id);
+        setHousingListings(prev => prev.filter(listing => listing.id !== id));
+      }
+      if (type === 'roommate') {
+        await deleteRoommate(id);
+        setRoommateProfiles(prev => prev.filter(profile => profile.id !== id));
+      }
+      toast.success('Deleted successfully!');
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete: ' + (error?.message || error));
+    }
   };
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -144,7 +193,7 @@ export default function Admin() {
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Recent Activities */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activities</h3>
               <div className="space-y-4">
                 {recentActivities.map((activity) => (
@@ -157,10 +206,10 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Pending Approvals */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Pending Approvals</h3>
               <div className="space-y-4">
                 {pendingApprovals.map((item) => (
@@ -185,7 +234,7 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}
@@ -273,15 +322,178 @@ export default function Admin() {
       {/* Other tabs content would be similar... */}
       {activeTab === 'housing' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Housing Management</h3>
-          <p className="text-gray-600">Manage property listings, approvals, and verification status.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">All Housing Listings</h3>
+          <div className="space-y-4">
+            {housingListings.length === 0 ? (
+              <p className="text-gray-600">No housing listings available.</p>
+            ) : (
+              housingListings.map(listing => (
+                <div key={listing.id} className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{listing.title}</h4>
+                      <p className="text-sm text-gray-600">{listing.location}</p>
+                      <p className="text-sm text-gray-500">Available: {listing.available ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {listing.available ? 'Available' : 'Unavailable'}
+                      </span>
+                      <button
+                        onClick={() => handleDelete('house', listing.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 ml-2"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       {activeTab === 'mess' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Mess Services Management</h3>
-          <p className="text-gray-600">Manage mess partners, subscriptions, and menu updates.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">All Mess Services</h3>
+          <div className="space-y-4">
+            {messServices.length === 0 ? (
+              <p className="text-gray-600">No mess services available.</p>
+            ) : (
+              messServices.map(service => (
+                <div key={service.id} className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{service.providerName}</h4>
+                      <p className="text-sm text-gray-600">{service.address}</p>
+                      <p className="text-sm text-gray-500">Active: {service.active ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {service.active ? 'Active' : 'Inactive'}
+                      </span>
+                      <button
+                        onClick={() => handleDelete('mess', service.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 ml-2"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">All Roommate Profiles</h3>
+            <div className="space-y-4">
+              {roommateProfiles.length === 0 ? (
+                <p className="text-gray-600">No roommate profiles available.</p>
+              ) : (
+                roommateProfiles.map(profile => (
+                  <div key={profile.id} className="border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{profile.title}</h4>
+                        <p className="text-sm text-gray-600">{profile.location}</p>
+                        <p className="text-sm text-gray-500">Budget: ₹{profile.budget}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Roommate
+                        </span>
+                        <button
+                          onClick={() => handleDelete('roommate', profile.id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 ml-2"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          {/* Search and Filters */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                <Filter className="w-5 h-5 mr-2" />
+                Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">All Users</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {[
+                    { name: 'Priya Sharma', email: 'priya@email.com', role: 'Student', status: 'Active' },
+                    { name: 'Rohit Kumar', email: 'rohit@email.com', role: 'Student', status: 'Active' },
+                    { name: 'Admin User', email: 'admin@campus.com', role: 'Admin', status: 'Active' },
+                  ].map((user, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {user.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                        <button className="text-red-600 hover:text-red-900">Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -317,7 +529,23 @@ export default function Admin() {
                       <p className="text-sm text-gray-600 mb-2">Contact: {request.contactPerson}</p>
                       <p className="text-sm text-gray-600 mb-2">Location: {request.address}</p>
                       <p className="text-sm text-gray-500">
-                        Submitted: {request.createdAt?.toDate ? new Date(request.createdAt.toDate()).toLocaleDateString() : 'Unknown'}
+                        Submitted: {
+                          request.createdAt
+                            ? (
+                                typeof request.createdAt.toDate === 'function'
+                                  ? new Date(request.createdAt.toDate()).toLocaleDateString()
+                                  : (
+                                      request.createdAt instanceof Date
+                                        ? request.createdAt.toLocaleDateString()
+                                        : (
+                                            typeof request.createdAt === 'string'
+                                              ? new Date(request.createdAt).toLocaleDateString()
+                                              : 'Unknown'
+                                          )
+                                    )
+                              )
+                            : 'Unknown'
+                        }
                       </p>
                     </div>
                     <div className="flex space-x-2">
@@ -386,7 +614,23 @@ export default function Admin() {
                       <p className="text-sm text-gray-600 mb-2">Location: {request.location}</p>
                       <p className="text-sm text-gray-600 mb-2">Rent: ₹{request.rent.toLocaleString()}/month</p>
                       <p className="text-sm text-gray-500">
-                        Submitted: {request.createdAt?.toDate ? new Date(request.createdAt.toDate()).toLocaleDateString() : 'Unknown'}
+                        Submitted: {
+                          request.createdAt
+                            ? (
+                                typeof request.createdAt.toDate === 'function'
+                                  ? new Date(request.createdAt.toDate()).toLocaleDateString()
+                                  : (
+                                      request.createdAt instanceof Date
+                                        ? request.createdAt.toLocaleDateString()
+                                        : (
+                                            typeof request.createdAt === 'string'
+                                              ? new Date(request.createdAt).toLocaleDateString()
+                                              : 'Unknown'
+                                          )
+                                    )
+                              )
+                            : 'Unknown'
+                        }
                       </p>
                     </div>
                     <div className="flex space-x-2">

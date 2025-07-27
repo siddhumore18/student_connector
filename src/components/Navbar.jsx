@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Home, Users, UtensilsCrossed, Building, User, Shield, Plus } from 'lucide-react';
+import { Menu, X, Home, Users, UtensilsCrossed, Building, User, Shield, Plus, Wifi, Car, Bed } from 'lucide-react';
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
@@ -9,6 +9,19 @@ const navigation = [
   { name: 'Mess Services', href: '/mess', icon: UtensilsCrossed },
   { name: 'Housing', href: '/housing', icon: Building },
 ];
+
+const amenityIcons = {
+  wifi: Wifi,
+  parking: Car,
+  furnished: Bed,
+  ac: '❄️',
+  security: Shield,
+  meals: '🍽️',
+  laundry: '🧺',
+  cleaning: '🧹',
+  garden: '🌿',
+  pets: '🐕',
+};
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
