@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToMessServices } from '../services/firebase.js';
 import { Calendar, Clock, Star, Check, UtensilsCrossed, Leaf, X, MapPin, DollarSign, Phone } from 'lucide-react';
-import { addCommentToListing, subscribeToComments, deleteComment, getUserProfile } from '../services/firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
@@ -107,9 +106,9 @@ export default function Mess() {
               <div className="p-6">
                 <div className="flex items-start space-x-4">
                   <img
-                    src={mess.imageUrls?.[0] || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                    src={mess.images?.[0] || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}
                     alt={mess.providerName}
-                    className="w-20 h-20 rounded-xl object-cover"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-blue-200"
                   />
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-gray-900 mb-1">{mess.providerName}</h4>
@@ -131,11 +130,6 @@ export default function Mess() {
                   </div>
                 </div>
               </div>
-              {user && (
-                <div className="pt-4 pb-2 px-2 sm:px-4 mt-4 border-t border-gray-100">
-                  <Comments collectionName="messServices" listingId={mess.id} currentUser={user} />
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -150,7 +144,7 @@ export default function Mess() {
             </button>
             <div className="flex flex-col md:flex-row items-center mb-8 gap-8">
               <img
-                src={selectedMess.imageUrls?.[0] || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                src={selectedMess.images?.[0] || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}
                 alt={selectedMess.providerName}
                 className="w-32 h-32 rounded-2xl object-cover shadow-md border border-gray-200"
               />
@@ -201,75 +195,6 @@ export default function Mess() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Comments({ collectionName, listingId, currentUser }) {
-  const [comments, setComments] = useState([]);
-  const [commentInput, setCommentInput] = useState('');
-  const [userProfiles, setUserProfiles] = useState({});
-  useEffect(() => {
-    const unsubscribe = subscribeToComments(collectionName, listingId, async (comments) => {
-      setComments(comments);
-      // Fetch user profiles for all commenters
-      const ids = Array.from(new Set(comments.map(c => c.userId)));
-      const profiles = {};
-      for (const id of ids) {
-        if (!id) continue;
-        profiles[id] = await getUserProfile(id);
-      }
-      setUserProfiles(profiles);
-    });
-    return () => unsubscribe && unsubscribe();
-  }, [collectionName, listingId]);
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!commentInput.trim()) return;
-    await addCommentToListing(collectionName, listingId, currentUser.id, commentInput.trim());
-    setCommentInput('');
-  };
-  const handleDeleteComment = async (comment) => {
-    if (!window.confirm('Delete this comment?')) return;
-    await deleteComment(collectionName, listingId, comment.id);
-  };
-  return (
-    <div className="mt-2 sm:mt-3 mb-2 sm:mb-3">
-      <div className="font-semibold text-gray-700 mb-2">Comments</div>
-      <form onSubmit={handleAddComment} className="flex flex-col sm:flex-row gap-2 mb-3">
-        <input
-          type="text"
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-300"
-          placeholder="Add a comment..."
-          value={commentInput}
-          onChange={e => setCommentInput(e.target.value)}
-        />
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">Post</button>
-      </form>
-      <div className="space-y-2 sm:space-y-3">
-        {comments.map(comment => {
-          const profile = userProfiles[comment.userId];
-          return (
-            <div key={comment.id} className="flex items-start gap-2 sm:gap-3">
-              <img
-                src={profile?.avatar || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'}
-                alt={profile?.name || 'User'}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-blue-200"
-              />
-              <div className="flex-1 bg-gray-100 rounded-xl px-3 py-2 sm:px-4 sm:py-2">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="font-semibold text-xs sm:text-sm text-gray-900">{profile?.name || 'User'}</span>
-                  <span className="text-xs text-gray-400">{comment.timestamp?.toDate ? new Date(comment.timestamp.toDate()).toLocaleString() : ''}</span>
-                  {comment.userId === currentUser.id && (
-                    <button onClick={() => handleDeleteComment(comment)} className="ml-0 sm:ml-2 text-xs text-red-500 hover:underline">Delete</button>
-                  )}
-                </div>
-                <div className="text-gray-800 text-xs sm:text-sm mt-1 break-words">{comment.text}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

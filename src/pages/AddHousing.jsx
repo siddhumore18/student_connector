@@ -3,6 +3,7 @@ import { addHousingListing } from '../services/firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import toast from 'react-hot-toast';
 import { Building, Upload, Plus, X, DollarSign, MapPin, Phone, Mail, User, FileText, Bed, Bath } from 'lucide-react';
+import ImageUpload from '../components/ImageUpload.jsx';
 
 export default function AddHousing() {
   const { user } = useAuth();
@@ -474,33 +475,23 @@ export default function AddHousing() {
             <Upload className="w-5 h-5 mr-2" />
             Property Images
           </h3>
-          <div className="space-y-4">
-            {formData.images.map((image, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <input
-                  type="url"
-                  value={image}
-                  onChange={(e) => updateImage(index, e.target.value)}
-                  className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Image URL"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addImage}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Image
-            </button>
+          <ImageUpload
+            images={formData.images}
+            onImagesChange={(newImages) => setFormData({ ...formData, images: newImages })}
+            multiple={true}
+            maxImages={10}
+            folder="housing_images"
+            label="Upload photos of your property"
+          />
+          <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+            <h4 className="font-medium text-blue-900 mb-2">Recommended Images:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Living room and common areas</li>
+              <li>• Bedrooms and bathrooms</li>
+              <li>• Kitchen and dining area</li>
+              <li>• Building exterior and entrance</li>
+              <li>• Nearby amenities and landmarks</li>
+            </ul>
           </div>
         </div>
 

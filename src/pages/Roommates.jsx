@@ -332,7 +332,7 @@ export default function Roommates() {
       </div>
 
       {/* Results */}
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {roommates.map((roommate) => (
           <div key={roommate.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
             <div className="p-6">
@@ -340,7 +340,7 @@ export default function Roommates() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <img
-                    src={roommate.user?.avatar || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                    src={roommate.images?.[0] || roommate.user?.avatar || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'}
                     alt={roommate.user?.name || roommate.title}
                     className="w-12 h-12 rounded-full object-cover"
                   />
@@ -435,7 +435,7 @@ export default function Roommates() {
             </button>
             <div className="flex flex-col items-center mb-8 gap-4">
               <img
-                src={selectedRoommate.user?.avatar || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                src={selectedRoommate.images?.[0] || selectedRoommate.user?.avatar || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150'}
                 alt={selectedRoommate.user?.name || selectedRoommate.title}
                 className="w-24 h-24 rounded-full object-cover shadow-md border border-gray-200 mb-2"
               />

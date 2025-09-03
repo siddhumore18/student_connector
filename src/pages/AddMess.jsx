@@ -3,6 +3,7 @@ import { addMessRequest } from '../services/firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import toast from 'react-hot-toast';
 import { UtensilsCrossed, Upload, Plus, X, DollarSign, MapPin, Phone, Mail, User, FileText } from 'lucide-react';
+import ImageUpload from '../components/ImageUpload.jsx';
 
 export default function AddMess() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function AddMess() {
       full: '',
     },
     documents: [],
+    images: [],
   });
 
   // Handlers for dynamic fields
@@ -364,10 +366,35 @@ export default function AddMess() {
           </div>
         </div>
 
-        {/* Documents */}
+        {/* Images */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
             <Upload className="w-5 h-5 mr-2" />
+            Mess Images
+          </h3>
+          <ImageUpload
+            images={formData.images}
+            onImagesChange={(newImages) => setFormData({ ...formData, images: newImages })}
+            multiple={true}
+            maxImages={8}
+            folder="mess_images"
+            label="Upload photos of your kitchen, dining area, and food"
+          />
+          <div className="mt-4 p-4 bg-emerald-50 rounded-xl">
+            <h4 className="font-medium text-emerald-900 mb-2">Recommended Images:</h4>
+            <ul className="text-sm text-emerald-700 space-y-1">
+              <li>• Kitchen and cooking area</li>
+              <li>• Dining hall/seating area</li>
+              <li>• Sample food dishes</li>
+              <li>• Hygiene and cleanliness standards</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Documents */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <FileText className="w-5 h-5 mr-2" />
             Required Documents
           </h3>
           <div className="space-y-4">

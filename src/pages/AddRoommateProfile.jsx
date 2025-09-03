@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Users, User, MapPin, DollarSign, Calendar, Save } from 'lucide-react';
+import { Users, User, MapPin, DollarSign, Calendar, Save, Upload } from 'lucide-react';
 import { addRoommateProfile } from '../services/firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import ImageUpload from '../components/ImageUpload.jsx';
 
 export default function AddRoommateProfile() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function AddRoommateProfile() {
       whatsapp: '',
       telegram: '',
     },
+    images: [],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,6 +248,31 @@ export default function AddRoommateProfile() {
               />
               <label htmlFor="pets" className="ml-2 text-sm text-gray-700">Pets allowed</label>
             </div>
+          </div>
+        </div>
+
+        {/* Profile Images */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <Upload className="w-5 h-5 mr-2" />
+            Profile Images
+          </h3>
+          <ImageUpload
+            images={formData.images}
+            onImagesChange={(newImages) => setFormData({ ...formData, images: newImages })}
+            multiple={true}
+            maxImages={5}
+            folder="roommate_profiles"
+            label="Upload photos to help others get to know you"
+          />
+          <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+            <h4 className="font-medium text-blue-900 mb-2">Photo Tips:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Include a clear profile photo</li>
+              <li>• Show your living space or ideal room setup</li>
+              <li>• Add photos that represent your lifestyle</li>
+              <li>• Keep photos appropriate and professional</li>
+            </ul>
           </div>
         </div>
 

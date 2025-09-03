@@ -99,7 +99,7 @@ export default function MessDetails() {
         const messData = { id: snap.id, ...snap.data() };
         setMess(messData);
         // Set the first image as the selected one, or a placeholder
-        setSelectedImage(messData.imageUrls?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400');
+        setSelectedImage(messData.images?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400');
       } else {
         // Fallback query if needed (though direct doc get is better)
         const q = query(collection(db, 'messServices'), where('id', '==', id));
@@ -107,7 +107,7 @@ export default function MessDetails() {
         if (!qSnap.empty) {
             const messData = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() };
             setMess(messData);
-            setSelectedImage(messData.imageUrls?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400');
+            setSelectedImage(messData.images?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400');
         }
       }
       setLoading(false);
@@ -118,7 +118,7 @@ export default function MessDetails() {
   if (loading) return <div className="text-center py-16">Loading...</div>;
   if (!mess) return <div className="text-center py-16">Mess not found.</div>;
 
-  const images = mess.imageUrls || [];
+  const images = mess.images || [];
 
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
@@ -129,23 +129,46 @@ export default function MessDetails() {
       {/* Details */}
       <div className="bg-white rounded-2xl shadow p-6 md:p-10 mb-10">
         <div className="flex flex-col md:flex-row gap-10 mb-10">
-          {/* --- NEW IMAGE GALLERY --- */}
-          <div className="flex-shrink-0 w-full md:w-80">
-            <div className="aspect-w-1 aspect-h-1 bg-gray-100 rounded-xl overflow-hidden mb-4">
-              <img src={selectedImage} alt="Mess" className="object-cover w-full h-full" />
-            </div>
-            {images.length > 1 && (
-                <div className="flex gap-2 mt-2 overflow-x-auto">
-                {images.map((img, i) => (
-                    <img
-                        key={i}
-                        src={img}
-                        alt={`Mess thumbnail ${i}`}
-                        onClick={() => setSelectedImage(img)}
-                        className={`w-16 h-16 object-cover rounded-lg border-2 cursor-pointer transition-all ${selectedImage === img ? 'border-blue-500' : 'border-gray-200'}`}
-                    />
-                ))}
+          {/* Image Gallery */}
+          <div className="flex-shrink-0 w-full md:w-96">
+            {/* Main Image */}
+            <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-square">
+              <img 
+                src={selectedImage} 
+                alt="Mess" 
+                className="object-cover w-full h-full"
+              />
+              {images.length > 1 && (
+                <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-sm">
+                  {images.findIndex(img => img === selectedImage) + 1} / {images.length}
                 </div>
+              )}
+            </div>
+            
+            {/* Thumbnail Gallery */}
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
+                      selectedImage === img ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedImage(img)}
+                  >
+                    <img
+                      src={img}
+                      alt={`Mess thumbnail ${i + 1}`}
+                      className="object-cover w-full h-full"
+                    />
+                    {selectedImage === img && (
+                      <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                        <Check className="w-6 h-6 text-blue-600" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

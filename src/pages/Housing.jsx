@@ -157,20 +157,38 @@ export default function Housing() {
         {housingListings.map((housing) => (
           <div key={housing.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
             <div className="md:flex">
-              {/* Image */}
-              <div className="md:w-1/3">
-                <div className="relative h-64 md:h-full">
-                  <img
-                    src={housing.images?.[0] || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                    alt={housing.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <button className="absolute top-4 right-4 p-2 bg-white bg-opacity-90 rounded-full text-gray-600 hover:text-red-500 transition-colors">
-                    <Heart className="w-5 h-5" />
-                  </button>
+              {/* Images */}
+              <div className="md:w-1/3 p-4">
+                <div className="relative">
+                  {/* Main Image */}
+                  <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-3">
+                    <img
+                      src={housing.images?.[0] || 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                      alt={housing.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <button className="absolute top-2 right-2 p-1.5 bg-white bg-opacity-90 rounded-full text-gray-600 hover:text-red-500 transition-colors">
+                      <Heart className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  {/* Thumbnail Gallery */}
                   {housing.images && housing.images.length > 1 && (
-                    <div className="absolute bottom-4 left-4 px-2 py-1 bg-black bg-opacity-70 text-white text-xs rounded">
-                      +{housing.images.length - 1} more
+                    <div className="grid grid-cols-3 gap-1">
+                      {housing.images.slice(1, 4).map((img, i) => (
+                        <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                          <img
+                            src={img}
+                            alt={`${housing.title} ${i + 2}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {housing.images.length > 4 && (
+                        <div className="aspect-square bg-gray-900 bg-opacity-75 rounded-lg flex items-center justify-center text-white text-xs font-medium">
+                          +{housing.images.length - 4}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -263,9 +281,6 @@ export default function Housing() {
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="pt-4 pb-2 px-2 sm:px-4 mt-4 border-t border-gray-100">
-              <Comments collectionName="housingListings" listingId={housing.id} currentUser={user} />
             </div>
           </div>
         ))}
